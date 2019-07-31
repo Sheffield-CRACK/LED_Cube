@@ -237,12 +237,13 @@ def sat_locations(database,
     return grid, overhead_now
 
 if __name__ == "__main__":
-    database = update_passing_sats()
-
-
+    # Not needed in the above functions
     from pprint import pprint
 
+    # Create the database
+    database = update_passing_sats()
 
+    # Where am I?
     me = geocoder.ip('me')
     mylat, mylon = me.latlng
 
