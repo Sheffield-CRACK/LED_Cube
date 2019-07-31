@@ -14,37 +14,119 @@ from orbit_predictor import (angles, coordinate_systems, exceptions, keplerian,
 
 from sgp4.earth_gravity import wgs84
 from sgp4.io import twoline2rv
+from datetime import datetime, timedelta
 
-test_tle = '''ISS (ZARYA)
-1 25544U 98067A   19211.03329231  .00004695  00000-0  87069-4 0  9995
-2 25544  51.6437 148.6985 0006091 196.9496 269.4947 15.51024086181901'''
+import glob
+import io
+import shutil
+try:
+    from urllib2 import urlopen
+except:
+    from urllib.request import urlopen
+import os
 
-ID, tle_1, tle_2 = test_tle.split('\n')
+def fetch(urls):
+    """Fetch TLE from internet and save it to `destination`."""
+    # TODO: play nicely when recollecting data
+    try:
+        shutil.rmtree("TLE_data")
+    except:
+        pass
+    os.mkdir('TLE_data')
 
-tle = '\n'.join([tle_1, tle_2])
+    for url in urls:
+        destination = url.split('/')[-1]
+        destination = os.path.join("TLE_data", destination)
+    
+        with open(destination, "w", encoding="utf-8") as dest:
+            response = urlopen(url)
+            dest.write(response.read().decode("utf-8"))
 
-g = geocoder.ip('me')
-lat, lon = g.latlng
-me = locations.Location('me', lat, lon, 0)
+def update_passing_sats():
+    # Where am I?
+    g = geocoder.ip('me')
+    lat, lon = g.latlng
+    me = locations.Location('me', lat, lon, 0)
 
-print(me)
+    # Get the current time.
+    now = datetime.utcnow()
+    # Get tomorrow, as the limit on when to check
+    tomorrow = now + timedelta(days=1)
+    print('', now, '\n', tomorrow)
 
-# Get the current time.
-now = datetime.utcnow()
 
-database = sources.MemoryTLESource()
+    # Get a database of satellites. As a test case, use GPS satellites
+    TLE_urls = ('http://celestrak.com/NORAD/elements/weather.txt',
+                'http://celestrak.com/NORAD/elements/resource.txt',
+                'https://www.celestrak.com/NORAD/elements/cubesat.txt',
+                'http://celestrak.com/NORAD/elements/stations.txt',
+                'https://www.celestrak.com/NORAD/elements/sarsat.txt',
+                'https://www.celestrak.com/NORAD/elements/noaa.txt',
+                'https://www.celestrak.com/NORAD/elements/amateur.txt',
+                'https://www.celestrak.com/NORAD/elements/engineering.txt')
 
-# Add the test data to the datebase
-sat = twoline2rv(tle_1, tle_2, wgs84)
-database.add_tle(ID, sat, now)
+    fetch(TLE_urls)
+    created_files = glob.glob("TLE_data/*")
+    print("TLE files:\n{}".format(created_files))
 
-predictor = predictors.TLEPredictor(ID, database)
+    # Now read that data into my TLE database
+    database = sources.MemoryTLESource()
+    # Also track all my satellite IDs
+    sat_IDs = []
+    print("Parsing TLE data...")
+    for fname in created_files:
+        with open(fname, 'r') as f:
+            while True:
+                name = f.readline().strip()
+                if name == '':
+                    break
 
-pred = predictor.get_next_pass(
-    location=me,
-    when_utc=now,
-    max_elevation_gt=85.,
-    aos_at_dg=85
-)
+                sat_IDs.append(name)
+                tle_1 = f.readline().strip()
+                tle_2 = f.readline().strip()
 
-print(pred)
+                tle = (tle_1, tle_2)
+
+                database.add_tle(name, tle, now)
+    print("Done!")
+
+    print("Checking my satellites...")
+    alt_lim = 5 # Degrees
+
+    passes = []
+    will_pass = []
+    
+    for ID in sat_IDs:
+        try:
+            predictor = predictors.TLEPredictor(ID, database)
+            pred = predictor.get_next_pass(
+                location=me,
+                when_utc=now,
+                aos_at_dg=alt_lim,
+                limit_date=tomorrow
+            )
+            # print("The object {} will pass over {} deg at:\n--> {}\n".format(ID, alt_lim, pred))
+            will_pass.append(ID)
+            passes.append(pred)
+        except AssertionError as e:
+            pass
+            # print(e)
+        except exceptions.NotReachable as e:
+            pass
+            # print(e)
+        except exceptions.PropagationError as e:
+            pass
+            # print(e)
+
+    # print(will_pass)
+    print("\n\nFound {} satellites that will pass through the top {} degrees above lat, lon: {}, {}".format(
+        len(will_pass), 90-alt_lim, lat, lon
+    ))
+
+
+    with open('passing_sats.txt', 'w') as f:
+        to_write = '\n'.join(will_pass)
+        f.write(to_write)
+
+if __name__ == "__main__":
+    update_passing_sats()
