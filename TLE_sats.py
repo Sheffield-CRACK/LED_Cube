@@ -20,8 +20,6 @@ from orbit_predictor import (angles, coordinate_systems, exceptions, keplerian,
 from sgp4.earth_gravity import wgs84
 from sgp4.io import twoline2rv
 
-import pyproj
-
 try:
     from urllib2 import urlopen
 except:
@@ -253,7 +251,7 @@ if __name__ == "__main__":
 
         # pop the grid
         grid, satlist = sat_locations(
-            database, mylat, mylon, 
+      g      database, mylat, mylon, 
             time=now, quiet=True
         )
 
