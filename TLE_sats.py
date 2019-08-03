@@ -251,7 +251,7 @@ if __name__ == "__main__":
 
         # pop the grid
         grid, satlist = sat_locations(
-      g      database, mylat, mylon, 
+            database, mylat, mylon, 
             time=now, quiet=True
         )
 
