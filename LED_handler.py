@@ -13,17 +13,26 @@ class LEDHandler(object):
         self.X, self.Y, self.Z = grid.shape
         self.grid = grid
 
-        # TODO: Should this be a grid flash frequency, rather than a pulse duration?
+        # TODO:
+        # Should this be a grid flash frequency, rather than a pulse duration?
         self.pulse_duration = pulse_duration
 
         # The cathodes are assumed to be the first dimension.
-        # These will control transistors that let the current flow through a specific layer
+        # These will control transistors that let the current flow through
+        # a specific layer.
+        # Pins 0 and 1 are reserved. Don't use them.
         self.anodes = [gpiozero.DigitalOutputDevice(
-            pin=i, active_high=True, initial_value=False) for i in range(self.X)]
+            pin=i, active_high=True, initial_value=False)
+            for i in range(2, self.X+2)
+        ]
 
         # There will be Y*Z anodes. They will control whether an index is on or off.
+        start = self.X + 2
+        stop = start + (self.Y * self.Z)
         self.cathodes = [gpiozero.DigitalOutputDevice(
-            pin=j, active_high=True, initial_value=False) for j in range(self.X, self.Y*self.Z)]
+            pin=j, active_high=True, initial_value=False)
+            for j in range(start, stop)
+        ]
 
 
     def flash_grid(self):
