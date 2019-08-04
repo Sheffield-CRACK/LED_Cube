@@ -37,6 +37,7 @@ class LEDHandler(object):
 
     def flash_grid(self):
         for cathode, layer in zip(self.cathodes, self.grid):
+            print("Activating {}".format(cathode.pin))
             cathode.on()
 
             # Get the layer in 1D - the LEDs are hooked up in only 2D,
@@ -46,6 +47,7 @@ class LEDHandler(object):
             # Activate the pins we want
             for anode, is_on in zip(self.anodes, layer):
                 if is_on:
+                    print("Activating pin {}".format(anode.pin))
                     anode.on()
 
             # Leave them on for long enough to see
@@ -75,7 +77,9 @@ class LEDHandler(object):
         self.anodes[x].on()
 
         # The relevant cathode is less trivial
-        index = (y * self.Z) + z
+        index = 2 + (y * self.Z) + z
+
+        print("Flashing cathode GPIO{:02d}".format(index))
         self.cathodes[index].on()
 
         time.sleep(pulse_duration)
@@ -83,3 +87,10 @@ class LEDHandler(object):
         # Turn off the pins again
         self.anodes[x].off()
         self.cathodes[index].off()
+
+    def close(self):
+        '''Gracefully shutdown the pins'''
+        for anode in self.anodes:
+            anode.close()
+        for cathode in self.cathodes:
+            cathode.close()
