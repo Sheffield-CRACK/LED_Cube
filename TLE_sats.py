@@ -11,6 +11,7 @@ import glob
 import io
 import os
 import shutil
+import time
 from datetime import datetime, timedelta
 
 import geocoder
@@ -94,7 +95,7 @@ def update_passing_sats(dt=1):
                 database.add_tle(name, tle, now)
     print("Done!")
 
-    print("Checking my satellites...")
+    print("Checking all satellites to see which transit overhead in the next 24 hours...")
     alt_lim = abs(90 - OVERHEAD_LIMIT) # Degrees
 
     passes = []
@@ -121,6 +122,7 @@ def update_passing_sats(dt=1):
         except exceptions.PropagationError as e:
             pass
             # print(e)
+        
 
     # print(will_pass)
     print("\n\nFound {} satellites that will pass through the top {} degrees above lat, lon: {}, {} within the next {} day(s)\n\n\n".format(
@@ -250,14 +252,17 @@ if __name__ == "__main__":
         now = datetime.utcnow()
 
         # pop the grid
+        t0 = time.clock()
         grid, satlist = sat_locations(
             database, mylat, mylon, 
             time=now, quiet=True
         )
+        exec_time = time.clock() - t0
 
         os.system("clear")
+        print("--------------------------------------")
+        print("Checked for overhead satellites in {:.3f}s".format(exec_time))
         if np.sum(grid):
-            print("--------------------------------------")
             print(now)
             for i, subgrid in enumerate(grid):
                 if np.sum(subgrid):
