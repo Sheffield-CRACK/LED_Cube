@@ -118,9 +118,9 @@ class LEDHandler(object):
     def flash_LED(self, x, y, z, pulse_duration=1):
         '''Flash the LED at coordinate (x, y, z)'''
         # LAYER 1
-        # [[[1, 0, 0],
+        # [[[1, 0, 1],
         #   [0, 0, 0],
-        #   [0, 0, 0]],
+        #   [1, 0, 1]],
 
         # LAYER 2
         #  [[0, 0, 0],
@@ -128,9 +128,9 @@ class LEDHandler(object):
         #   [0, 0, 0]],
 
         # LAYER 3
-        #  [[0, 0, 0],
+        #  [[1, 0, 1],
         #   [0, 0, 0],
-        #   [0, 0, 1]]]
+        #   [1, 0, 1]]]
 
         # The anode we want is easy - just the layer.
         self.anodes[x].on()
