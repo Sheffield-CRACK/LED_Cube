@@ -11,6 +11,7 @@ import numpy as np
 
 
 class LEDHandler(object):
+    PIN_OFFSET = 0
     '''Control the GPIO Pins to operate the LED cube.'''
     def __init__(self, grid, pulse_duration=5e-3, duty_cycle=0.5, debug=False):
         self.debug = debug
@@ -31,12 +32,12 @@ class LEDHandler(object):
         # Pins 0 and 1 are reserved. Don't use them.
         self.anodes = [gpiozero.DigitalOutputDevice(
             pin=i, active_high=True, initial_value=False)
-            for i in range(2, self.X+2)
+            for i in range(self.PIN_OFFSET, self.X+self.PIN_OFFSET)
         ]
 
         # There will be Y*Z anodes.
         # They will control whether an index is on or off.
-        start = self.X + 2
+        start = self.X + self.PIN_OFFSET
         stop = start + (self.Y * self.Z)
         self.cathodes = [gpiozero.DigitalOutputDevice(
             pin=j, active_high=True, initial_value=False)
@@ -136,7 +137,7 @@ class LEDHandler(object):
         self.anodes[x].on()
 
         # The relevant cathode is less trivial
-        index = 2 + (y * self.Z) + z
+        index = self.PIN_OFFSET + (y * self.Z) + z
 
         print("Flashing cathode GPIO{:02d}".format(index))
         self.cathodes[index].on()
