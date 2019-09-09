@@ -5,7 +5,7 @@ Will query for TLE files daily, and produce a grid of how many satellites are wh
 ## TLE, and the basics of the Raspberry Pi's job
 This is how satellite/orbital junk ephemerides are reported. It's basically just the position of the thing at two moments in time, then you extrapolate out from there. I'm using ported NASA code to do this - if it's good enough for NASA it's good enough for me, and I cant be arsed to write the code for that.
 
-Once a day, the full list of TLE files from [here]() is downloaded, and each is checked to see if it passes overhead to the user. If it does, the pi puts it in its pocket, but if it doesn't it gets chucked away. Then, the pi starts constantly checking what's overhead and generating a grid, with the number of objects in each cell. The grid corresponds to the volume of space above the user. The plan is to then use this to light up the grid, corresponding to how the space junk is positioned above the user.
+Once a day, the full list of TLE files from [here](https://celestrak.com/NORAD/elements/) is downloaded, and each is checked to see if it passes overhead to the user. If it does, the pi puts it in its pocket, but if it doesn't it gets chucked away. Then, the pi starts constantly checking what's overhead and generating a grid, with the number of objects in each cell. The grid corresponds to the volume of space above the user. The plan is to then use this to light up the grid, corresponding to how the space junk is positioned above the user.
 
 
 
