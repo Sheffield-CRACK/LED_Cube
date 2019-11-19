@@ -6,7 +6,7 @@ DELAY = 5
 
 
 data = gpiozero.DigitalOutputDevice(17, initial_value=False, active_high=True)
-clock = gpiozero.DigitalOutputDevice(27, initial_value=False, active_high=False)
+clock = gpiozero.DigitalOutputDevice(27, initial_value=False, active_high=True)
 reset = gpiozero.DigitalOutputDevice(22, initial_value=True, active_high=True)
 
 
