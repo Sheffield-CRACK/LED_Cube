@@ -11,7 +11,8 @@ import numpy as np
 
 
 class LEDHandler(object):
-    PIN_OFFSET = 0
+    forbidden_pins = [0, 1]
+
     '''Control the GPIO Pins to operate the LED cube.'''
     def __init__(self, grid, pulse_duration=5e-3, duty_cycle=0.5, debug=False):
         self.debug = debug
@@ -30,19 +31,31 @@ class LEDHandler(object):
         # These will control transistors that let the current flow through
         # a specific layer.
         # Pins 0 and 1 are reserved. Don't use them.
-        self.anodes = [gpiozero.DigitalOutputDevice(
-            pin=i, active_high=True, initial_value=False)
-            for i in range(self.PIN_OFFSET, self.X+self.PIN_OFFSET)
-        ]
+        self.anodes = []
+        pin = 0
+        while len(self.anodes) <= self.X:
+            if pin not in self.forbidden_pins:
+                self.anodes.append(
+                    gpiozero.DigitalOutputDevice(
+                        pin=pin, active_high=True, initial_value=False
+                    )
+                )
+            pin += 1
 
         # There will be Y*Z anodes.
         # They will control whether an index is on or off.
-        start = self.X + self.PIN_OFFSET
-        stop = start + (self.Y * self.Z)
-        self.cathodes = [gpiozero.DigitalOutputDevice(
-            pin=j, active_high=True, initial_value=False)
-            for j in range(start, stop)
-        ]
+        self.cathodes = []
+        N_cath = self.Y * self.Z
+        while len(self.cathodes) <= N_cath:
+            if pin not in self.forbidden_pins:
+                self.cathodes.append(
+                    gpiozero.DigitalOutputDevice(
+                        pin=pin, active_high=True, initial_value=False
+                    )
+                )
+            pin += 1
+
+            self.N_pins = pin
 
         # Start a thread that literally just calls the flash_grid method
         # over and over, ad infinitum.
