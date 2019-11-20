@@ -17,6 +17,8 @@ def clockpulse():
 
 print("Okay, going")
 
+time.sleep(DELAY)
+
 print("Sending reset pulse:")
 reset.off()
 clockpulse()
