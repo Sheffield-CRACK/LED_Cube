@@ -13,6 +13,7 @@ def clockpulse():
     clock.on()
     time.sleep(PULSE_WIDTH)
     clock.off()
+    time.sleep(PULSE_WIDTH)
 
 
 print("Okay, going")
