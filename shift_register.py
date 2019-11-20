@@ -28,12 +28,14 @@ print("Sending data...")
 
 for _ in range(8):
     data.off()
+    time.sleep(PULSE_WIDTH)
     print("Data off, sending clock pulse")
     clockpulse()
     print("Sent!")
     time.sleep(DELAY)
 
     data.on()
+    time.sleep(PULSE_WIDTH)
     print("Data on, sending clock pulse")
     clockpulse()
     print("Sent!")
