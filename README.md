@@ -1,6 +1,33 @@
 # Trackellite
 Software for desktop satellite tracking toy. 
-Will query for TLE files daily, and produce a grid of how many satellites are where in real time.
+Will query for TLE files daily, and produce a grid of how many satellites are where in real time. This uses an arduino and a series of SIPO shift registers to drive the actual cube. The python script `send_cube.py` contains a function, `conv2byte_vect`, which converts a numpy array (or list) to something that can be transmitted to the arduino. Something like this:
+
+```python
+# Start the serial connection
+ser = serial.Serial('/dev/cu.wchusbserial72', 9600, timeout=.1)
+print("Waiting for Arduino to start...")
+time.sleep(2)
+print("\n\n\nReady to start transmitting!")
+
+
+# Bouncing Box
+di = 1
+i = 1
+while True:
+    if i == 6 or i == 0:
+        di = -di
+    i += di
+
+    temp_data = np.array(data, copy=True)
+    temp_data[i:i+2, i:i+2, i:i+2] = 1
+
+    writeable_data = conv2byte_vect(temp_data)
+    ser.write(writeable_data)
+
+    time.sleep(0.1)
+
+ser.close()
+```
 
 ## TLE, and the basics of the Raspberry Pi's job
 This is how satellite/orbital junk ephemerides are reported. It's basically just the position of the thing at two moments in time, then you extrapolate out from there. I'm using ported NASA code to do this - if it's good enough for NASA it's good enough for me, and I cant be arsed to write the code for that. They're somehow still using a system built to work with punchcards? Fortran users must feel vindicated.
