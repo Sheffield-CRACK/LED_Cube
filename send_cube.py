@@ -52,46 +52,45 @@ def conv2byte_vect(cube):
     new_cube = bytearray(new_cube)
     return new_cube
 
+if __name__ in "__main__":
+    data = np.zeros((N_LAYERS, N_REGISTERS, N_BITS), dtype=int)
+    data[0,  :,  0] = 0
+    data[0,  :, -1] = 0
+    data[0,  0,  :] = 0
+    data[0, -1,  :] = 0
 
-data = np.zeros((N_LAYERS, N_REGISTERS, N_BITS), dtype=int)
-data[0,  :,  0] = 0
-data[0,  :, -1] = 0
-data[0,  0,  :] = 0
-data[0, -1,  :] = 0
+    data[-1, :,  0] = 0
+    data[-1, :, -1] = 0
+    data[-1, 0,  :] = 0
+    data[-1,-1,  :] = 0
 
-data[-1, :,  0] = 0
-data[-1, :, -1] = 0
-data[-1, 0,  :] = 0
-data[-1,-1,  :] = 0
-
-data[:,  0,  0] = 0
-data[:, -1,  0] = 0
-data[:,  0, -1] = 0
-data[:, -1, -1] = 0
-
-
-# Start the serial connection
-ser = serial.Serial('/dev/cu.wchusbserial1410', 9600, timeout=.1)
-print("Waiting for Arduino to start...")
-time.sleep(2)
-print("\n\n\nReady to start transmitting!")
+    data[:,  0,  0] = 0
+    data[:, -1,  0] = 0
+    data[:,  0, -1] = 0
+    data[:, -1, -1] = 0
 
 
-# Bouncing Box
-di = 1
-i = 1
-while True
-    if i == 6 or i == 0:
-        di = -di
-    i += di
+    # Start the serial connection
+    ser = serial.Serial('/dev/cu.wchusbserial1410', 9600, timeout=.1)
+    print("Waiting for Arduino to start...")
+    time.sleep(2)
+    print("\n\n\nReady to start transmitting!")
 
 
-    temp_data = np.array(data, copy=True)
-    temp_data[i:i+2, i:i+2, i:i+2] = 1
+    # Bouncing Box
+    di = 1
+    i = 1
+    while True
+        if i == 6 or i == 0:
+            di = -di
+        i += di
 
-    writeable_data = conv2byte_vect(temp_data)
-    ser.write(writeable_data)
+        temp_data = np.array(data, copy=True)
+        temp_data[i:i+2, i:i+2, i:i+2] = 1
 
-    time.sleep(0.1)
+        writeable_data = conv2byte_vect(temp_data)
+        ser.write(writeable_data)
 
-ser.close()
+        time.sleep(0.1)
+
+    ser.close()
