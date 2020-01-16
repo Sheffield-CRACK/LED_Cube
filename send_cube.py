@@ -71,7 +71,7 @@ if __name__ in "__main__":
 
 
     # Start the serial connection
-    ser = serial.Serial('/dev/cu.wchusbserial1410', 9600, timeout=.1)
+    ser = serial.Serial('/dev/cu.wchusbserial72', 9600, timeout=.1)
     print("Waiting for Arduino to start...")
     time.sleep(2)
     print("\n\n\nReady to start transmitting!")
@@ -80,7 +80,7 @@ if __name__ in "__main__":
     # Bouncing Box
     di = 1
     i = 1
-    while True
+    while True:
         if i == 6 or i == 0:
             di = -di
         i += di
