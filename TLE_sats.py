@@ -1,5 +1,5 @@
 '''Uses python-sgp4 to calculate which satellites will cross my zenith today.
-Then, make a list of those satellites. 
+Then, make a list of those satellites.
 Print a list periodically of the satellites overhead.
 
 requires this repo to be installed:
@@ -8,10 +8,9 @@ https://github.com/satellogic/orbit-predictor
 '''
 
 import glob
-import io
 import os
 import shutil
-import time
+from time import clock
 from datetime import datetime, timedelta
 
 import geocoder
@@ -26,6 +25,7 @@ try:
 except:
     from urllib.request import urlopen
 
+from send_cube import connect_cube, send_cube
 
 OVERHEAD_LIMIT = 5. # Degrees
 
@@ -52,7 +52,7 @@ def fetch(urls):
     for url in urls:
         destination = url.split('/')[-1]
         destination = os.path.join("TLE_data", destination)
-    
+
         with open(destination, "w", encoding="utf-8") as dest:
             response = urlopen(url)
             dest.write(response.read().decode("utf-8"))
@@ -100,7 +100,7 @@ def update_passing_sats(dt=1):
 
     passes = []
     will_pass = []
-    
+
     for ID in sat_IDs:
         try:
             predictor = predictors.TLEPredictor(ID, database)
@@ -110,7 +110,7 @@ def update_passing_sats(dt=1):
                 aos_at_dg=alt_lim,
                 limit_date=tomorrow
             )
-            # print("The object {} will pass over {} deg at:\n--> {}\n".format(ID, alt_lim, pred))
+            print("The object {} will pass over {} deg at:\n--> {}\n".format(ID, alt_lim, pred))
             will_pass.append(ID)
             passes.append(pred)
         except AssertionError as e:
@@ -122,7 +122,7 @@ def update_passing_sats(dt=1):
         except exceptions.PropagationError as e:
             pass
             # print(e)
-        
+
 
     # print(will_pass)
     print("\n\nFound {} satellites that will pass through the top {} degrees above lat, lon: {}, {} within the next {} day(s)\n\n\n".format(
@@ -133,7 +133,7 @@ def update_passing_sats(dt=1):
     with open('passing_sats.txt', 'w') as f:
         to_write = '\n'.join(will_pass)
         f.write(to_write)
-    
+
     for ID, pred in zip(will_pass, passes):
         print("{}\n\n".format(pred))
 
@@ -142,8 +142,8 @@ def update_passing_sats(dt=1):
 def sat_locations(database,
                   mylat, mylon,
                   time=None,
-                  lat_bins=11, lon_bins=11,
-                  alt_edges=[0, 2000, 10000, 20000, 30000, 9e99],
+                  lat_bins=8, lon_bins=8,
+                  alt_edges=[0, 1000, 2000, 5000, 10000, 20000, 30000, 9e99],
                   quiet=True):
     '''For the satellite IDs in passing_sats.txt, check their current location. Then,
     fill in a grid of how many satellites are in each cell of a grid.
@@ -160,7 +160,7 @@ def sat_locations(database,
         The same, for longitude
     alt_edges, iterable of floats, optional
         A list of the altitude bins.
-    
+
     Output:
     -------
     grid, 3D numpy array
@@ -232,7 +232,7 @@ def sat_locations(database,
 
             # Save this satellite
             grid[index_alt, index_lat, index_lon] += 1
-            overhead_now.append(ID)
+            overhead_now.append((ID, alt))
 
     return grid, overhead_now
 
@@ -247,27 +247,40 @@ if __name__ == "__main__":
     me = geocoder.ip('me')
     mylat, mylon = me.latlng
 
+    # TODO: SET THIS
+    dev_path = ''
+
+    try:
+        ser = connect_cube(dev_path)
+    except:
+        ser = None
+
     while True:
         # Time to evaluate
         now = datetime.utcnow()
 
         # pop the grid
-        t0 = time.clock()
+        t0 = clock()
         grid, satlist = sat_locations(
-            database, mylat, mylon, 
+            database, mylat, mylon,
             time=now, quiet=True
         )
-        exec_time = time.clock() - t0
+        exec_time = clock() - t0
 
         os.system("clear")
         print("--------------------------------------")
         print("Checked for overhead satellites in {:.3f}s".format(exec_time))
+        print(now)
         if np.sum(grid):
-            print(now)
             for i, subgrid in enumerate(grid):
                 if np.sum(subgrid):
                     print("Layer {}".format(i))
                     pprint(subgrid)
             pprint(np.sum(grid))
 
-            print("Satellites overhead now:\n{}".format(satlist))
+            if ser is not None:
+                send_cube(ser, grid)
+
+            print("Satellites overhead now:")
+            for sat in satlist:
+                print("{}: {:.3f} km".format(*sat))
