@@ -52,30 +52,67 @@ def conv2byte_vect(cube):
     new_cube = bytearray(new_cube)
     return new_cube
 
-if __name__ in "__main__":
-    data = np.zeros((N_LAYERS, N_REGISTERS, N_BITS), dtype=int)
-    data[0,  :,  0] = 0
-    data[0,  :, -1] = 0
-    data[0,  0,  :] = 0
-    data[0, -1,  :] = 0
+def connect_cube(dev_path):
+    '''Connects to the cube.
 
-    data[-1, :,  0] = 0
-    data[-1, :, -1] = 0
-    data[-1, 0,  :] = 0
-    data[-1,-1,  :] = 0
+    USAGE:
+        cube = np.ones(8,8,8)
+        ser = connect_cube(dev_path)
+        send_cube(ser, cube)
 
-    data[:,  0,  0] = 0
-    data[:, -1,  0] = 0
-    data[:,  0, -1] = 0
-    data[:, -1, -1] = 0
+    To find the dev_path:
+        Find Port Number on Macintosh
+            Open terminal and type: ls /dev/*.
+            Note the port number listed for /dev/tty.usbmodem* or /dev/tty.usbserial*. The port number is represented with * here.
 
+        Find Port Number on Linux
+            Open terminal and type: ls /dev/tty*.
+            Note the port number listed for /dev/ttyUSB* or /dev/ttyACM*. The port number is represented with * here.
 
-    # Start the serial connection
-    ser = serial.Serial('/dev/cu.wchusbserial72', 9600, timeout=.1)
+        Find Port Number on Windows
+            Open Device Manager, and expand the Ports (COM & LPT) list.
+            Note the number on the USB Serial Port.
+
+        Use the listed port as the serial port in MATLAB®. For example: /dev/ttyUSB0.
+
+    Or, just google it. Use your initiative, since I haven't found a consistent way of doing this >:(
+    '''
+    ser = serial.Serial(dev_path, 9600, timeout=.1)
+
     print("Waiting for Arduino to start...")
     time.sleep(2)
     print("\n\n\nReady to start transmitting!")
 
+    return ser
+
+def send_cube(ser, cube):
+    '''Send a 3D array to the cube, down the serial pipe.
+    Returns the number of bits written. '''
+    writeable_data = conv2byte_vect(cube)
+    ser.write(writeable_data)
+
+if __name__ in "__main__":
+    data = np.zeros((N_LAYERS, N_REGISTERS, N_BITS), dtype=int)
+    data[0,  :,  0] = 1
+    data[0,  :, -1] = 1
+    data[0,  0,  :] = 1
+    data[0, -1,  :] = 1
+
+    data[-1, :,  0] = 1
+    data[-1, :, -1] = 1
+    data[-1, 0,  :] = 1
+    data[-1,-1,  :] = 1
+
+    data[:,  0,  0] = 1
+    data[:, -1,  0] = 1
+    data[:,  0, -1] = 1
+    data[:, -1, -1] = 1
+
+
+    # Start the serial connection
+    ser = connect_cube('/dev/cu.wchusbserial72')
+    send_cube(data)
+    time.sleep(2)
 
     # Bouncing Box
     di = 1
@@ -85,12 +122,13 @@ if __name__ in "__main__":
             di = -di
         i += di
 
-        temp_data = np.array(data, copy=True)
+        temp_data = np.zeros_like(data)
         temp_data[i:i+2, i:i+2, i:i+2] = 1
 
-        writeable_data = conv2byte_vect(temp_data)
-        ser.write(writeable_data)
+        # SEND THE DATA
+        send_cube(ser, temp_data)
 
+        # Wait for the human eye to catch up
         time.sleep(0.1)
 
     ser.close()
