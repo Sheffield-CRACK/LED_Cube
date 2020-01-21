@@ -1,0 +1,196 @@
+//Pin connected to ST_CP of 74HC595
+int latchPin = 5;
+//Pin connected to SH_CP of 74HC595
+int clockPin = 3;
+//Pin connected to DS of 74HC595
+int dataPin = 2;
+
+int Pin = 5;
+int mrPin = 4;
+
+// How many 74hct595 are in cascade
+const int N_REGISTERS = 8;
+const int N_LAYERS = 8;
+
+// How long to illuminate each layer
+const int FLASH_PERIOD = 5000;
+
+// For recieving data
+int r = 1;
+int layer = 0;
+
+
+// Initial state
+char initial[8*N_REGISTERS*N_REGISTERS] = {
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+
+        '1', '0', '0', '0', '0', '0', '0', '1',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '1', '0', '0', '0', '0', '0', '0', '1',
+
+        '1', '0', '0', '0', '0', '0', '0', '1',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '1', '0', '0', '0', '0', '0', '0', '1',
+
+        '1', '0', '0', '0', '0', '0', '0', '1',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '1', '1', '0', '0', '0',
+        '0', '0', '0', '1', '1', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '1', '0', '0', '0', '0', '0', '0', '1',
+
+        '1', '0', '0', '0', '0', '0', '0', '1',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '1', '1', '0', '0', '0',
+        '0', '0', '0', '1', '1', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '1', '0', '0', '0', '0', '0', '0', '1',
+
+        '1', '0', '0', '0', '0', '0', '0', '1',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '1', '0', '0', '0', '0', '0', '0', '1',
+
+        '1', '0', '0', '0', '0', '0', '0', '1',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '0', '0', '0', '0', '0', '0', '0', '0',
+        '1', '0', '0', '0', '0', '0', '0', '1',
+
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1',
+        '1', '1', '1', '1', '1', '1', '1', '1'};
+
+// This aray actually does the legwork
+byte cube[N_LAYERS*N_REGISTERS] = {255, 255, 255, 255, 255, 255, 255, 255,
+            129, 0, 0, 0, 0, 0, 0, 129,
+            129, 0, 0, 0, 0, 0, 0, 129,
+            129, 0, 0, 24, 24, 0, 0, 129,
+            129, 0, 0, 24, 24, 0, 0, 129,
+            129, 0, 0, 0, 0, 0, 0, 129,
+            129, 0, 0, 0, 0, 0, 0, 129,
+            255, 255, 255, 255, 255, 255, 255, 255};
+
+
+void setup() {
+  // set pins to output because they are
+  // addressed in the main loop
+  pinMode(latchPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+
+  digitalWrite(clockPin, LOW);
+
+  Serial.begin(9600);
+  Serial.write("\n\nReset\n");
+
+  // char2binary();
+}
+
+void loop() {
+  recieveBytes();
+
+  writeLayer(layer);
+
+  // Iterate up through the layers
+  layer += 1;
+  layer = layer % N_LAYERS;
+
+  delay(FLASH_PERIOD);
+}
+
+
+void addressLayer(int layer){
+  registerWrite(layer, true);
+}
+
+
+void registerWrite(int whichPin, int whichState) {
+// the bits you want to send
+  byte bitsToSend = 0;
+
+  // turn off the output so the pins don't light up
+  // while you're shifting bits:
+  digitalWrite(latchPin, LOW);
+
+  // turn on the next highest bit in bitsToSend:
+  bitWrite(bitsToSend, whichPin, whichState);
+
+  // shift the bits out:
+  shiftOut(dataPin, clockPin, LSBFIRST, bitsToSend);
+}
+
+
+// Shove the rows array out to the shift registers
+void writeLayer(int mylayer){
+  // Write the rows to the registers
+  // Disable pushing the output
+  digitalWrite(latchPin, false);
+
+  // Address the desired layer
+  registerWrite(mylayer, true);
+  //shiftOut(dataPin, clockPin, LSBFIRST, mylayer+1);
+
+  // Push the rows of the layer out
+  for (int i=mylayer*N_REGISTERS; i<(1+mylayer)*N_REGISTERS; i++){
+    shiftOut(dataPin, clockPin, LSBFIRST, cube[i]);
+  }
+
+  // Push the output
+  digitalWrite(latchPin, true);
+}
+
+
+// Recieve all the bytes that were pushed across
+// and push them into the layers array, starting with the back.
+// *** Probably very slow! Shuffling the array each time we recieve a byte is probably dumb
+void recieveBytes(){
+  while(Serial.available()){
+    // This is where I'll keep my recieved byte
+    byte recieved;
+
+    for (int i=(N_LAYERS*N_REGISTERS)-1; i>1; i--){
+      cube[i] = cube[i-1];
+    }
+    recieved = Serial.read();
+    Serial.print("Recieved ");
+    Serial.print(recieved, BIN);
+    Serial.print("\n");
+    cube[0] = recieved;
+  }
+}
+
+
