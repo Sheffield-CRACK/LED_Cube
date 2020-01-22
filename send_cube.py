@@ -91,7 +91,7 @@ def connect_cube():
     ports = list(serial.tools.list_ports.comports())
     Arduino_ports=[]
     for p in ports:
-        if 'Arduino' in p.description:
+        if p.pid == 29987:
             Arduino_ports.append(p)
 
     if len(Arduino_ports) == 0:

@@ -1,4 +1,4 @@
-from send_cube import conv2byte_vect
+from send_cube import connect_cube, send_cube
 import numpy as np
 
 from pprint import pprint
@@ -8,10 +8,12 @@ N_LAYERS = 8
 N_REGISTERS = 8
 N_BITS = 8
 
-DROP_RATE = 0.5
-RAIN_FALL_RATE = 1 # seconds on screen per drop
+DROP_RATE = 1
+RAIN_FALL_RATE = 0.6 # seconds on screen per drop
 
 delay = RAIN_FALL_RATE / N_LAYERS
+
+arduino = connect_cube()
 
 # List of my raindrops. (x, y)
 drops = []
@@ -21,25 +23,22 @@ while True:
     new_drops = []
     for drop in drops:
         layer, reg, bit = drop
-        layer -= 1
-        if layer >= 0:
+        layer += 1
+        if layer < N_LAYERS:
             new_drops.append((layer, reg, bit))
 
     # Randomly add new drops
-    if np.random.rand() > DROP_RATE:
+    if np.random.rand() < DROP_RATE:
         reg = np.random.randint(0, N_REGISTERS)
         bit = np.random.randint(0, N_BITS)
 
-        new_drop = (N_LAYERS-1, reg, bit)
+        new_drop = (0, reg, bit)
         new_drops.append(new_drop)
-
     drops = new_drops
 
     for drop in drops:
         grid[drop] = 1
-    pprint(grid)
 
-    for drop in drops:
-        print("Drop: {}".format(drop))
+    send_cube(arduino, grid)
 
     sleep(delay)

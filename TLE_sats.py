@@ -27,7 +27,7 @@ except:
 
 from send_cube import connect_cube, send_cube
 
-OVERHEAD_LIMIT = 5. # Degrees
+OVERHEAD_LIMIT = 10. # Degrees
 
 TLE_URLS = ('http://celestrak.com/NORAD/elements/weather.txt',
             'http://celestrak.com/NORAD/elements/resource.txt',
@@ -143,7 +143,7 @@ def sat_locations(database,
                   mylat, mylon,
                   time=None,
                   lat_bins=8, lon_bins=8,
-                  alt_edges=[0, 1000, 2000, 5000, 10000, 20000, 30000, 9e99],
+                  alt_edges=[9e99, 30000, 20000, 10000, 5000, 2000, 1000, 0],
                   quiet=True):
     '''For the satellite IDs in passing_sats.txt, check their current location. Then,
     fill in a grid of how many satellites are in each cell of a grid.
@@ -239,6 +239,14 @@ def sat_locations(database,
 if __name__ == "__main__":
     # Not needed in the above functions
     from pprint import pprint
+    import time
+
+    try:
+        ser = connect_cube()
+    except:
+        print("No arduino detected!!")
+        input("> ")
+        ser = None
 
     # Create the database
     database = update_passing_sats()
@@ -247,13 +255,6 @@ if __name__ == "__main__":
     me = geocoder.ip('me')
     mylat, mylon = me.latlng
 
-    # TODO: SET THIS
-    dev_path = ''
-
-    try:
-        ser = connect_cube(dev_path)
-    except:
-        ser = None
 
     while True:
         # Time to evaluate
@@ -271,16 +272,19 @@ if __name__ == "__main__":
         print("--------------------------------------")
         print("Checked for overhead satellites in {:.3f}s".format(exec_time))
         print(now)
-        if np.sum(grid):
-            for i, subgrid in enumerate(grid):
-                if np.sum(subgrid):
-                    print("Layer {}".format(i))
-                    pprint(subgrid)
-            pprint(np.sum(grid))
+        if ser is not None:
+            send_cube(ser, grid)
 
-            if ser is not None:
-                send_cube(ser, grid)
+        # if np.sum(grid):
+        #     for i, subgrid in enumerate(grid):
+        #         if np.sum(subgrid):
+        #             print("Layer {}".format(i))
+        #             pprint(subgrid)
+        #     pprint(np.sum(grid))
 
-            print("Satellites overhead now:")
-            for sat in satlist:
-                print("{}: {:.3f} km".format(*sat))
+
+        print("Satellites overhead now:")
+        for sat in satlist:
+            print("{}: {:.3f} km".format(*sat))
+
+        time.sleep(1 - exec_time)
